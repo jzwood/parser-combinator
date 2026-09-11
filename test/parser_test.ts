@@ -1,6 +1,6 @@
 import { assertEquals } from "@std/assert";
-import * as P from "../src/parser.ts";
-import { Parser } from "../src/parser.ts";
+import * as P from "../parser.ts";
+import type { Parser } from "../parser.ts";
 import {
   integer,
   isWhitespace,

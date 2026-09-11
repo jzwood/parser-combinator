@@ -1,15 +1,11 @@
 import * as P from "./parser.ts";
-import { Parser } from "./parser.ts";
+import type { Parser } from "./parser.ts";
 
 // USEFUL UTILS BUT NOTHING A USER COULDN'T MAKE THEMSELVES
 
-export function isDigit(grapheme: P.Grapheme): boolean {
-  return /^\d$/.test(grapheme);
-}
+export const join = (chars: P.Grapheme[]): string => chars.join("");
 
-export function join(chars: P.Grapheme[]) {
-  return chars.join("");
-}
+export const isDigit = (grapheme: P.Grapheme): boolean => /^\d$/.test(grapheme);
 
 export function wordBy(
   predicate: (grapheme: P.Grapheme) => boolean,
@@ -36,7 +32,7 @@ export const anyWhitespace: Parser<string[]> = P.zeroOrMore(
 export function isAlpha(grapheme: P.Grapheme): boolean {
   return (/^[a-zA-Z]$/).test(grapheme);
 }
-export const alpha = P.satisfy(isAlpha);
+export const alpha: Parser<P.Grapheme> = P.satisfy(isAlpha);
 
 export function wrap<T>(l: string, p: Parser<T>, r: string): Parser<T> {
   return P.right(P.word(l), P.left(p, P.word(r)));
