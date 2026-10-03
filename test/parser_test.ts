@@ -195,3 +195,77 @@ Deno.test(function parseExprStrictTest() {
     "Maximum call stack size exceeded",
   );
 });
+
+// Same grammar as `parseExprStrict`, with only the recursive references
+// deferred, so building the parser terminates.
+function parseExprLazyFn(): Parser<Expr> {
+  return P.oneOf<Expr>(
+    integer,
+    wrap(
+      "(",
+      P.map3(
+        P.lazy(parseExprLazyFn),
+        trim(parseOperator),
+        P.lazy(parseExprLazyFn),
+        (left, operator, right) => ({ left, operator, right }),
+      ),
+      ")",
+    ),
+  );
+}
+
+Deno.test(function parseExprLazyFnTest() {
+  assertEquals(parseExprLazyFn()("(23 + ((1 * 3) / 9))", P.CURSOR), {
+    ok: true,
+    value: {
+      result: {
+        left: 23,
+        operator: 0,
+        right: {
+          left: { left: 1, operator: 2, right: 3 },
+          operator: 3,
+          right: 9,
+        },
+      },
+      cursor: { row: 0, col: 20, total: 20 },
+      remainder: "",
+    },
+  });
+});
+
+// The whole grammar deferred at once: it refers to itself by name, and `lazy`
+// builds it a single time, on first use.
+const parseExprLazyConst: Parser<Expr> = P.lazy(() =>
+  P.oneOf<Expr>(
+    integer,
+    wrap(
+      "(",
+      P.map3(
+        parseExprLazyConst,
+        trim(parseOperator),
+        parseExprLazyConst,
+        (left, operator, right) => ({ left, operator, right }),
+      ),
+      ")",
+    ),
+  )
+);
+
+Deno.test(function parseExprLazyConstTest() {
+  assertEquals(parseExprLazyConst("(23 + ((1 * 3) / 9))", P.CURSOR), {
+    ok: true,
+    value: {
+      result: {
+        left: 23,
+        operator: 0,
+        right: {
+          left: { left: 1, operator: 2, right: 3 },
+          operator: 3,
+          right: 9,
+        },
+      },
+      cursor: { row: 0, col: 20, total: 20 },
+      remainder: "",
+    },
+  });
+});
