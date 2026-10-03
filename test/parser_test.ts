@@ -1,4 +1,4 @@
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertThrows } from "@std/assert";
 import * as P from "../parser.ts";
 import type { Parser } from "../parser.ts";
 import {
@@ -167,4 +167,31 @@ Deno.test(function parseExprTest() {
       remainder: "",
     },
   });
+});
+
+// Same grammar as `parseExpr`, minus the eta-expansion. Arguments are evaluated
+// eagerly, so merely building the parser recurses forever, before any input is
+// consumed.
+function parseExprStrict(): Parser<Expr> {
+  return P.oneOf<Expr>(
+    integer,
+    wrap(
+      "(",
+      P.map3(
+        parseExprStrict(),
+        trim(parseOperator),
+        parseExprStrict(),
+        (left, operator, right) => ({ left, operator, right }),
+      ),
+      ")",
+    ),
+  );
+}
+
+Deno.test(function parseExprStrictTest() {
+  assertThrows(
+    () => parseExprStrict(),
+    RangeError,
+    "Maximum call stack size exceeded",
+  );
 });
