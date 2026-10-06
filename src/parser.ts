@@ -56,6 +56,16 @@ export function pure<A>(result: A): Parser<A> {
     Result.ok({ result, cursor, remainder: input });
 }
 
+export function lazy<T>(thunk: () => Parser<T>): Parser<T> {
+  // `thunk` can't be called up front: that's the eager evaluation `lazy` is
+  // meant to avoid. Calling it on every run would work, but would rebuild the
+  // grammar each time the parser recurses, so the first result is kept. This
+  // assumes `thunk` is pure.
+  let cachedParser: Parser<T> | undefined;
+  return (input: string, cursor: Cursor = CURSOR) =>
+    (cachedParser ??= thunk())(input, cursor);
+}
+
 export function map2<A, B, C>(
   pa: Parser<A>,
   pb: Parser<B>,
